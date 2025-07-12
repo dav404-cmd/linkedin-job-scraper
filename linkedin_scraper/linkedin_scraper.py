@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 import logging
 
-from linkedin_login import login
+from linkedin_scraper.linkedin_login import login
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

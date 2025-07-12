@@ -3,7 +3,7 @@ from playwright.async_api import Page,BrowserContext
 import asyncio
 import os
 
-from xpaths import EMAIL_FIELD,PASSWORD_FIELD,SUBMIT_BTN
+from linkedin_scraper.xpaths import EMAIL_FIELD,PASSWORD_FIELD,SUBMIT_BTN
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

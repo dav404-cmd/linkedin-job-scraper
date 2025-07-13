@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import logging
 
 from linkedin_scraper.linkedin_login import login
-
+from linkedin_scraper.xpaths import JOB_CARD
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -58,10 +58,23 @@ class LINKEDIN_SCRAPER:
             if not success_cred:
                 logger.error("[scraper/login] ! failed to login")
                 await self.close_browser()
-        print(url)
-        await self.page.goto(url)
 
+        await self.page.goto(url)
         await asyncio.sleep(3)
+
+        try:
+            job_cards = await self.page.query_selector_all(JOB_CARD)
+            if not job_cards:
+                logger.warning("[linkedin_scraper.py] ! No job card found;waiting 2 sec;retrying..")
+                await asyncio.sleep(2)
+                job_cards = await self.page.query_selector_all(JOB_CARD)
+                if not job_cards:
+                    logger.error("[linkedin_scraper.py] ! JOB_CARD not found.")
+                    await self.close_browser()
+        except Exception as e:
+            logger.error(f"[linkedin_scraper.py / find_job_card] ! error {e}")
+            await self.close_browser()
+        print(f"found {len(job_cards)}")
         await self.close_browser()
 
 

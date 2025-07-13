@@ -2,12 +2,12 @@ import asyncio
 from playwright.async_api import async_playwright
 import os
 from dotenv import load_dotenv
-import logging
 
 from linkedin_scraper.linkedin_login import login
 from linkedin_scraper.xpaths import JOB_CARD
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+from utils.logger import get_logger
+
+linkedin_log = get_logger("linkedin_scraper")
 
 class LINKEDIN_SCRAPER:
     def __init__(self):
@@ -56,23 +56,24 @@ class LINKEDIN_SCRAPER:
             await self.start_browser()
             success_cred = await login(self.context,self.page,email = email,password=password,cookies=None)
             if not success_cred:
-                logger.error("[scraper/login] ! failed to login")
+                linkedin_log.error(" ! failed to login")
                 await self.close_browser()
 
         await self.page.goto(url)
         await asyncio.sleep(3)
 
+
         try:
             job_cards = await self.page.query_selector_all(JOB_CARD)
             if not job_cards:
-                logger.warning("[linkedin_scraper.py] ! No job card found;waiting 2 sec;retrying..")
+                linkedin_log.warning(" ! No job card found;waiting 2 sec;retrying..")
                 await asyncio.sleep(2)
                 job_cards = await self.page.query_selector_all(JOB_CARD)
                 if not job_cards:
-                    logger.error("[linkedin_scraper.py] ! JOB_CARD not found.")
+                    linkedin_log.error(" ! JOB_CARD not found.")
                     await self.close_browser()
         except Exception as e:
-            logger.error(f"[linkedin_scraper.py / find_job_card] ! error {e}")
+            linkedin_log.error(f" ! error in finding job_cards :  {e}")
             await self.close_browser()
         print(f"found {len(job_cards)}")
         await self.close_browser()

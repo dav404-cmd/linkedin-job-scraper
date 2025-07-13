@@ -4,10 +4,9 @@ import asyncio
 import os
 
 from linkedin_scraper.xpaths import EMAIL_FIELD,PASSWORD_FIELD,SUBMIT_BTN
+from utils.logger import get_logger
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
+login_log = get_logger("linkedin/login")
 
 async def store_cookies(context, env_file_path=".env"):
     try:
@@ -34,9 +33,9 @@ async def store_cookies(context, env_file_path=".env"):
             with open(env_file_path, "w") as f:
                 f.writelines(lines)
 
-            logger.info(f"[store_cookies] * Stored li_at into '{env_file_path}' as LINKEDIN_COOKIES")
+            login_log.info(f"[store_cookies] * Stored li_at into '{env_file_path}' as LINKEDIN_COOKIES")
     except Exception as e:
-        logger.error(f"[store_cookies] ! Error: {e}")
+        login_log.error(f"[store_cookies] ! Error: {e}")
 
 
 
@@ -55,9 +54,9 @@ async def login(context:BrowserContext,page:Page,email:str = None,password:str =
         await page.goto("https://www.linkedin.com/feed/")
         await asyncio.sleep(3)
         if await page.locator("a[href*='/in/']").first.is_visible():
-            logger.info("[login] * cookies login success.")
+            login_log.info(" * cookies login success.")
             return True
-        logger.error("[login] ! cookies login failed.")
+        login_log.error("[login] ! cookies login failed.")
 
         if email and password:
             await page.goto("https://www.linkedin.com/login")
@@ -68,13 +67,13 @@ async def login(context:BrowserContext,page:Page,email:str = None,password:str =
             await asyncio.sleep(3)
 
             if await page.locator("a[href*='/in/']").first.is_visible():
-                logger.info("[login] * credentials login success.")
+                login_log.info("[login] * credentials login success.")
                 await store_cookies(context)
                 return True
 
 
-            logger.error("[login] ! credentials login failed.")
-        logger.error("[login] ! login failed invalid cookies or creds.")
+            login_log.error("[login] ! credentials login failed.")
+        login_log.error("[login] ! login failed invalid cookies or creds.")
     except Exception as e:
-        logger.error(f"[login] ! Error : {e}")
+        login_log.error(f"[login] ! Error : {e}")
         return False

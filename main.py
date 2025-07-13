@@ -2,12 +2,13 @@ import asyncio
 
 from linkedin_scraper.linkedin_scraper import LINKEDIN_SCRAPER
 
-def run_scraper():
+async def run_scraper():
     try:
         scraper = LINKEDIN_SCRAPER()
-        asyncio.run(scraper.scrape())
+        url = await scraper.get_url("machine learning engineer","United States")
+        await scraper.scrape(url)
     except Exception  as e:
         print(f"[main/run_scraper] ! error {e}")
 
 if __name__ == "__main__":
-    run_scraper()
+    asyncio.run(run_scraper())

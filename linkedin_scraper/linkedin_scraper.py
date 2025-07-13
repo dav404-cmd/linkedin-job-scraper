@@ -34,7 +34,14 @@ class LINKEDIN_SCRAPER:
         if self.playwright:
             await self.playwright.stop()
 
-    async def scrape(self):
+    @staticmethod
+    async def get_url(query,location):
+        query_clean = query.replace(" ","%20")
+        clean_location = location.replace(" ","%20")
+        url = f"https://www.linkedin.com/jobs/search/?keywords={query_clean}&location={clean_location}"
+        return str(url)
+
+    async def scrape(self,url):
         await self.start_browser()
         load_dotenv()
 
@@ -51,6 +58,8 @@ class LINKEDIN_SCRAPER:
             if not success_cred:
                 logger.error("[scraper/login] ! failed to login")
                 await self.close_browser()
+        print(url)
+        await self.page.goto(url)
 
         await asyncio.sleep(3)
         await self.close_browser()
@@ -58,7 +67,8 @@ class LINKEDIN_SCRAPER:
 
 if __name__ == "__main__":
     scraper = LINKEDIN_SCRAPER()
-    run = scraper.scrape()
+    url_fetch = scraper.get_url("machine learning engineer","United States")
+    run = scraper.scrape(url_fetch)
     asyncio.run(run)
 
 

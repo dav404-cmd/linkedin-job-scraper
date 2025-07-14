@@ -9,7 +9,7 @@ async def run_scraper():
     try:
         scraper = LINKEDIN_SCRAPER()
         url = await scraper.get_url("machine learning engineer","United States")
-        await scraper.scrape(url)
+        await scraper.scrape(url,limit=5)
     except Exception  as e:
         main_log.error(f"[run_scraper] ! error {e}")
 

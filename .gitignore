@@ -7,3 +7,6 @@ __pycache__/
 .idea/
 #Ignore environment files
 .env
+
+data/jobs_data/
+data/test_data/

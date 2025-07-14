@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 
 from linkedin_scraper.linkedin_login import login
-from linkedin_scraper.xpaths import JOB_CARD
+from linkedin_scraper.xpaths import JOB_CARD,SCROLL_CONTAINER
 from utils.logger import get_logger
 
 linkedin_log = get_logger("linkedin_scraper")
@@ -41,6 +41,39 @@ class LINKEDIN_SCRAPER:
         url = f"https://www.linkedin.com/jobs/search/?keywords={query_clean}&location={clean_location}"
         return str(url)
 
+    async def scroll_job_list_container(self, container_selector=SCROLL_CONTAINER):
+        container = await self.page.query_selector(container_selector)
+        if not container:
+            linkedin_log.error("!! Scroll container not found.")
+            return
+
+        previous_height = 0
+        same_scroll_count = 0
+
+        for _ in range(30):  # Max scroll attempts
+            await self.page.evaluate(
+                """(container) => {
+                    container.scrollBy(0, container.clientHeight);
+                }""",
+                container,
+            )
+            await asyncio.sleep(1.2)  # Wait for new jobs to load
+
+            current_height = await self.page.evaluate(
+                "(container) => container.scrollHeight", container
+            )
+
+            if current_height == previous_height:
+                same_scroll_count += 1
+            else:
+                same_scroll_count = 0
+
+            previous_height = current_height
+
+            if same_scroll_count >= 3:
+                linkedin_log.info("* Finished scrolling — no new job cards loading.")
+                break
+
     async def scrape(self,url):
         await self.start_browser()
         load_dotenv()
@@ -64,6 +97,7 @@ class LINKEDIN_SCRAPER:
 
 
         try:
+            await self.scroll_job_list_container()
             job_cards = await self.page.query_selector_all(JOB_CARD)
             if not job_cards:
                 linkedin_log.warning(" ! No job card found;waiting 2 sec;retrying..")

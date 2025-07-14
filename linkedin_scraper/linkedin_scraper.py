@@ -93,8 +93,13 @@ class LINKEDIN_SCRAPER:
             (p for p in preferences if
              any(x in p.lower() for x in ["remote", "on-site", "hybrid", "on site", "Contract", "Temporary"])),
             "N/A")
-        salary = next((p for p in preferences if "$" in p or "hr" in p.lower() or "-" in p), "N/A")
-
+        salary = next(
+            (p for p in preferences if (
+                    "$" in p or "€" in p or "£" in p or "¥" in p or
+                    "hr" in p.lower() or
+                    re.search(r"\$\d", p)  # Match like $1000
+            )),
+            "N/A")
         return job_type,workplace_type,salary
 
     async def scroll_job_list_container(self, container_selector=SCROLL_CONTAINER):

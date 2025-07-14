@@ -6,6 +6,7 @@ import pandas as pd
 import time
 from parsel import Selector
 import re
+import random
 
 from linkedin_scraper.linkedin_login import login
 from linkedin_scraper.xpaths import JOB_CARD,SCROLL_CONTAINER,NEXT_BTN,TITLE,COMPANY,POST_DATE,LOCATION,JOB_POINTS
@@ -72,8 +73,9 @@ class LINKEDIN_SCRAPER:
                     fallback_login = await login(self.context,self.page,email,password,cookies=None)
                     if not fallback_login:
                         linkedin_log.error("(fallback): !! Login with email/password also failed.")
-                        return []
-                    await self.page.goto(last_url)
+                        return False
+                await self.page.goto(last_url)
+                return True
             except Exception as e:
                 linkedin_log.error(f"!!ERROR in fallback : {e}")
                 retry += 1
@@ -96,7 +98,7 @@ class LINKEDIN_SCRAPER:
                 }""",
                 container,
             )
-            await asyncio.sleep(1.2)  # Wait for new jobs to load
+            await asyncio.sleep(1.2 + random.uniform(0.1,0.5))  # Wait for new jobs to load
 
             current_height = await self.page.evaluate(
                 "(container) => container.scrollHeight", container
@@ -118,7 +120,7 @@ class LINKEDIN_SCRAPER:
             next_btn = await self.page.query_selector(NEXT_BTN)
             if next_btn:
                 await next_btn.scroll_into_view_if_needed()
-                await asyncio.sleep(1)
+                await asyncio.sleep(1 + random.uniform(0.1,0.5))
                 await next_btn.click()
                 await self.page.wait_for_timeout(3000)  # wait for new cards to load
                 return True
@@ -138,6 +140,11 @@ class LINKEDIN_SCRAPER:
         password = os.getenv("LINKEDIN_PASSWORD")
         cookies = os.getenv("LINKEDIN_COOKIES")
 
+        if not email:
+            raise ValueError("LINKEDIN_EMAIL not set in environment!")
+
+
+
         output_path = os.path.join("data", "jobs_data", "linkedin_jobs.csv")
         output_path2 = os.path.join("data", "jobs_data", "jobs_batches_linkedin.csv")
         test_batched_path = os.path.join("data", "test_data", "batched_jobs_test.csv")
@@ -145,6 +152,9 @@ class LINKEDIN_SCRAPER:
 
         output_file = test_path if test_mode else output_path
         output_file2 = test_batched_path if test_mode else output_path2
+
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        os.makedirs(os.path.dirname(output_file2), exist_ok=True)
 
         success = await login(self.context,self.page,email = email,password=password,cookies=cookies)
         if not success:
@@ -156,7 +166,7 @@ class LINKEDIN_SCRAPER:
                 await self.close_browser()
 
         await self.page.goto(url)
-        await asyncio.sleep(3)
+        await asyncio.sleep(3 + random.uniform(0.1,0.5))
 
         jobs = []
         job_batches = []
@@ -174,7 +184,7 @@ class LINKEDIN_SCRAPER:
                 job_cards = await self.page.query_selector_all(JOB_CARD)
                 if not job_cards:
                     linkedin_log.warning("No cards found. Waiting 2s and retrying...")
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(2 + random.uniform(0.1,0.5))
                     job_cards = await self.page.query_selector_all(JOB_CARD)
                     if not job_cards:
                         success = await self.click_next_button()
@@ -188,7 +198,7 @@ class LINKEDIN_SCRAPER:
                     # linkedin_log.debug(f"* Found {len(job_cards)} job cards on page {page_num}")
 
                     await card.scroll_into_view_if_needed()
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(1 + random.uniform(0.1,0.5))
 
                     try:
                         await card.click()
@@ -196,7 +206,7 @@ class LINKEDIN_SCRAPER:
                         linkedin_log.error(f"! Failed to click card {idx}: {e}")
                         continue
 
-                    await asyncio.sleep(3)
+                    await asyncio.sleep(3+ random.uniform(0.1,0.5))
                     html = await self.page.content()
                     sel = Selector(html)
 
@@ -258,22 +268,30 @@ class LINKEDIN_SCRAPER:
                             linkedin_log.info(f"** Elapsed time: {elapsed:.2f}s for {job_count} jobs")
                             # rest.
                             linkedin_log.info("Resting for 10 sec.....")
-                            await asyncio.sleep(10)
+                            await asyncio.sleep(10 + random.uniform(0.1,0.5))
 
                     if job_count >= limit:
                         break
 
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(2 + random.uniform(0.1,0.5))
+
 
             except Exception as e:
                 linkedin_log.error(f"!!ERROR in while scraping : {e}")
                 try:
-                    linkedin_log.info(f"*Trying fall_back.")
-                    await self.fall_back(last_url)
-                    continue
+                    linkedin_log.info("* Trying fall_back.")
+                    fallback_success = await self.fall_back(last_url)
+                    if fallback_success:
+                        linkedin_log.info("* fallback was successful.")
+                        continue
+                    else:
+                        linkedin_log.warning("* fallback failed.")
+                        await self.close_browser()
+                        break
                 except Exception as e:
                     linkedin_log.error(f"!!ERROR while executing fall_back : {e}")
                     await self.close_browser()
+                    break  #stop retrying if fallback itself throws
 
             # Click next after finishing all cards on the page
             next_clicked = await self.click_next_button()

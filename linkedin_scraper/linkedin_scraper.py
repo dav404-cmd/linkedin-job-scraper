@@ -8,7 +8,7 @@ from parsel import Selector
 import re
 
 from linkedin_scraper.linkedin_login import login
-from linkedin_scraper.xpaths import JOB_CARD,SCROLL_CONTAINER,NEXT_BTN,TITLE,COMPANY,POST_DATE,LOCATION
+from linkedin_scraper.xpaths import JOB_CARD,SCROLL_CONTAINER,NEXT_BTN,TITLE,COMPANY,POST_DATE,LOCATION,JOB_POINTS
 from utils.logger import get_logger
 
 linkedin_log = get_logger("linkedin_scraper")
@@ -128,7 +128,7 @@ class LINKEDIN_SCRAPER:
             linkedin_log.error(f"! Error clicking next button: {e}")
             return False
 
-    async def scrape(self,url,limit = 30,test_mode = True):
+    async def scrape(self,url,limit = 1000,test_mode = False):
         start_time = time.time()
         await self.start_browser()
         load_dotenv()
@@ -214,7 +214,7 @@ class LINKEDIN_SCRAPER:
                     last_url = job_url
 
                     preferences = sel.xpath(
-                        "(//div[contains(@class,'job-details-fit-level-preferences')]//strong)/text()").getall()
+                        JOB_POINTS).getall()
                     preferences = [p.strip() for p in preferences if p.strip()]
 
                     job_type = next(
@@ -223,7 +223,7 @@ class LINKEDIN_SCRAPER:
                         "N/A")
                     workplace_type = next(
                         (p for p in preferences if
-                         any(x in p.lower() for x in ["remote", "on-site", "hybrid", "on site"])),
+                         any(x in p.lower() for x in ["remote", "on-site", "hybrid", "on site", "Contract" , "Temporary"])),
                         "N/A")
                     salary = next((p for p in preferences if "$" in p or "hr" in p.lower() or "-" in p), "N/A")
 
@@ -280,7 +280,7 @@ class LINKEDIN_SCRAPER:
             linkedin_log.info("next_btn to page clicked.")
             if not next_clicked:
                 linkedin_log.info("No more pages or cannot click next.")
-                break
+                await self.close_browser()
             page_num += 1
 
         await self.close_browser()
@@ -291,12 +291,5 @@ class LINKEDIN_SCRAPER:
             linkedin_log.info(f"Scraped {len(jobs)} jobs")
             linkedin_log.info(f"** Finished scraping. Total jobs collected: {job_count}")
         return jobs
-
-
-if __name__ == "__main__":
-    scraper = LINKEDIN_SCRAPER()
-    url_fetch = scraper.get_url("machine learning engineer","United States")
-    run = scraper.scrape(url_fetch)
-    asyncio.run(run)
 
 

@@ -24,7 +24,7 @@ class LINKEDIN_SCRAPER:
     async def start_browser(self):
         self.playwright = await async_playwright().start()
 
-        launch_args = {"headless": False}
+        launch_args = {"headless": True}
 
         self.browser = await self.playwright.chromium.launch(**launch_args)
         self.context = await self.browser.new_context(
@@ -81,6 +81,21 @@ class LINKEDIN_SCRAPER:
                 retry += 1
         linkedin_log.error(f"!!Failed to fall_back.")
         return False
+
+    @staticmethod
+    def parse_preferences(preferences):
+
+        job_type = next(
+            (p for p in preferences if
+             any(x in p.lower() for x in ["full-time", "part-time", "internship"])),
+            "N/A")
+        workplace_type = next(
+            (p for p in preferences if
+             any(x in p.lower() for x in ["remote", "on-site", "hybrid", "on site", "Contract", "Temporary"])),
+            "N/A")
+        salary = next((p for p in preferences if "$" in p or "hr" in p.lower() or "-" in p), "N/A")
+
+        return job_type,workplace_type,salary
 
     async def scroll_job_list_container(self, container_selector=SCROLL_CONTAINER):
         container = await self.page.query_selector(container_selector)
@@ -227,15 +242,7 @@ class LINKEDIN_SCRAPER:
                         JOB_POINTS).getall()
                     preferences = [p.strip() for p in preferences if p.strip()]
 
-                    job_type = next(
-                        (p for p in preferences if
-                         any(x in p.lower() for x in ["full-time", "part-time", "internship"])),
-                        "N/A")
-                    workplace_type = next(
-                        (p for p in preferences if
-                         any(x in p.lower() for x in ["remote", "on-site", "hybrid", "on site", "Contract" , "Temporary"])),
-                        "N/A")
-                    salary = next((p for p in preferences if "$" in p or "hr" in p.lower() or "-" in p), "N/A")
+                    job_type,workplace_type,salary = self.parse_preferences(preferences)
 
                     jobs.append(jobs_data := {
                         "title": self.safe_get(sel, TITLE),

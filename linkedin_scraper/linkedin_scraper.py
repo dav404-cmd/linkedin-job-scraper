@@ -8,6 +8,7 @@ from parsel import Selector
 import re
 import random
 
+from proxy.proxy_manager import ProxyManager
 from linkedin_scraper.linkedin_login import login
 from linkedin_scraper.xpaths import JOB_CARD,SCROLL_CONTAINER,NEXT_BTN,TITLE,COMPANY,POST_DATE,LOCATION,JOB_POINTS
 from utils.logger import get_logger
@@ -20,11 +21,20 @@ class LINKEDIN_SCRAPER:
         self.page = None
         self.browser = None
         self.context = None
+        self.proxy_manager = ProxyManager(protocol="http", timeout=5)
 
-    async def start_browser(self):
+    async def start_browser(self,proxy_mode = False):
         self.playwright = await async_playwright().start()
 
         launch_args = {"headless": True}
+
+        if proxy_mode:
+            proxy = await self.proxy_manager.get_working_proxy()
+            if proxy:
+                launch_args["proxy"] = {"server": proxy}
+                linkedin_log.info(f"Using proxy: {proxy}")
+            else :
+                linkedin_log.warning("! No proxy used")
 
         self.browser = await self.playwright.chromium.launch(**launch_args)
         self.context = await self.browser.new_context(
@@ -150,9 +160,9 @@ class LINKEDIN_SCRAPER:
             linkedin_log.error(f"! Error clicking next button: {e}")
             return False
 
-    async def scrape(self,url,limit = 1000,test_mode = False):
+    async def scrape(self,url,limit = 1000,test_mode = False,proxy_mode = False):
         start_time = time.time()
-        await self.start_browser()
+        await self.start_browser(proxy_mode = proxy_mode)
         load_dotenv()
 
         # Access values

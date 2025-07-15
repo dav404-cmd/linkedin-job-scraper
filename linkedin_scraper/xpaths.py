@@ -22,4 +22,4 @@ POST_DATE = (
 JOB_POINTS = "(//div[contains(@class,'job-details-fit-level-preferences')]//strong)/text()"
 
 #NOTE: SCROLL_CONTAINER changes regularly .
-SCROLL_CONTAINER = "div.uTXQwZXOqBdwsSbnNaoBUuXbeIyDqvnJDnimsY"
+SCROLL_CONTAINER = "div.HNvtVchiEpyZXjvHcrhpPhuiGsgEuhbAiKgHQ"

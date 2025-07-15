@@ -26,7 +26,7 @@ A Python-powered scraper for automatically extracting job postings from LinkedIn
 Install dependencies:
 
 ```bash
-pip install playwright pandas python-dotenv parsel
+pip install playwright pandas python-dotenv parsel aiohttp pytest 
 playwright install
 ```
 or 
@@ -36,7 +36,7 @@ playwright install
 ```
 ### Environment Variables
 
-Create a `.env` file in your root directory with the following:
+Create a `.env` file in your linkedin_scraper directory with the following:
 
 ```
 LINKEDIN_EMAIL=your_email@example.com

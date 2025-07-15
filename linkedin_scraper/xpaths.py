@@ -13,11 +13,11 @@ COMPANY = "//div[contains(@class, 'job-details-jobs-unified-top-card__company-na
 NEXT_BTN = "//button[@aria-label='View next page' and not(@disabled)]"
 LOCATION = "//span[contains(@class, 'tvm__text') and contains(@class, 'low-emphasis') and contains(text(), ',')]/text()"
 POST_DATE = (
-    "//span[contains(@class, 'tvm__text') and "
-    "(contains(@class, 'tvm__text--positive') or contains(@class, 'tvm__text--low-emphasis'))]"
-    "[.//span[contains(text(), 'ago') or contains(text(), 'week') or contains(text(), 'month')]]"
-    "//span/text()"
+    "normalize-space(string(//span[contains(@class, 'tvm__text')]["
+    "contains(., 'ago') or contains(., 'week') or contains(., 'month') or contains(., 'Reposted')]))"
 )
+
+
 #the job_point are just preference btw .Eg : salary,job type(remote),skills,etc.
 JOB_POINTS = "(//div[contains(@class,'job-details-fit-level-preferences')]//strong)/text()"
 
